@@ -6,8 +6,9 @@ var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
     .ConfigureServices(services =>
     {
-        // This registers your service so the HTTP Functions can use it
+        // Register your services here
         services.AddSingleton<MenuTableService>();
+        services.AddSingleton<FileShareService>(); // <-- Add this line!
     })
     .Build();
 
