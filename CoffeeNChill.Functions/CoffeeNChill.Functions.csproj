@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <Folder Include="Functions\Menu\" />
-    <Folder Include="Functions\Documents\" />
     <Folder Include="Models\" />
   </ItemGroup>
 
