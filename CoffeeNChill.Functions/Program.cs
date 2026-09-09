@@ -6,9 +6,10 @@ var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
     .ConfigureServices(services =>
     {
-        // Register your services here
         services.AddSingleton<MenuTableService>();
-        services.AddSingleton<FileShareService>(); // <-- Add this line!
+        services.AddSingleton<FileShareService>();
+        services.AddSingleton<BlobStorageService>();  // <-- Your new Blob service
+        services.AddSingleton<QueueStorageService>(); // <-- Your new Queue service
     })
     .Build();
 
