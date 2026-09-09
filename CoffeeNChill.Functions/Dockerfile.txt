@@ -1,0 +1,16 @@
+﻿# Code Attribution:
+# The multi-stage Dockerfile setup for containerizing Azure Functions (.NET worker) 
+# was adapted from the official Microsoft Azure Functions Docker documentation.
+# Reference: https://learn.microsoft.com/en-us/azure/azure-functions/functions-create-container-linux
+
+# Stage 1: Build the C# application
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS installer-env
+WORKDIR /src
+COPY . .
+RUN mkdir -p /home/site/wwwroot && \
+    dotnet publish CoffeeNChill.Functions.csproj --output /home/site/wwwroot
+
+# Stage 2: Runtime image
+FROM mcr.microsoft.com/azure-functions/dotnet-worker:4-dotnet-8.0 AS runtime
+WORKDIR /home/site/wwwroot
+COPY --from=installer-env /home/site/wwwroot .
