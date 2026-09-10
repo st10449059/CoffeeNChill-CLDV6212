@@ -5,6 +5,7 @@
 
 using Azure.Storage.Files.Shares;
 using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -25,8 +26,14 @@ namespace CoffeeNChill.Functions.Services
 
         public FileShareService(IConfiguration configuration)
         {
-            // Live Azure Cloud Connection String
-            string connectionString = "DefaultEndpointsProtocol=https;AccountName=yashandayden;AccountKey=+z3CqGaIKp82Lou3klv0MY5SoDxpL3aXgtDFWiRBKXOh6R3ntJbq07qx7LmoC6kISEiwKxMlTGC++AStmQn5wQ==;EndpointSuffix=core.windows.net";
+            // Read connection string securely from environment variables / local.settings.json
+            string connectionString = Environment.GetEnvironmentVariable("AzureStorageConnectionString")
+                                      ?? configuration["AzureStorageConnectionString"];
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new InvalidOperationException("AzureStorageConnectionString is not configured.");
+            }
 
             _serviceClient = new ShareServiceClient(connectionString);
         }
