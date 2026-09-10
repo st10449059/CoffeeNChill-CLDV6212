@@ -53,7 +53,7 @@ namespace CoffeeNChill.Functions.Services
         // UPDATE
         public async Task UpdateMenuItemAsync(MenuItem item)
         {
-            await _tableClient.UpdateEntityAsync(item, item.ETag, TableUpdateMode.Replace);
+            await _tableClient.UpdateEntityAsync(item, Azure.ETag.All, TableUpdateMode.Replace);
         }
 
         // DELETE
