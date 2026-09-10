@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace CoffeeNChill.Functions.Services
 {
-    // DTO (Data Transfer Object) to hold the file information required by the Part 1 rubric
     public class FileMetadataDto
     {
         public string FileName { get; set; }
@@ -21,35 +20,43 @@ namespace CoffeeNChill.Functions.Services
 
     public class FileShareService
     {
-        private readonly ShareClient _shareClient;
+        private readonly ShareServiceClient _serviceClient;
+        private readonly string _shareName = "staff-docs";
 
         public FileShareService(IConfiguration configuration)
         {
-            var connectionString = configuration["AzureWebJobsStorage"];
-            var serviceClient = new ShareServiceClient(connectionString);
+            // Live Azure Cloud Connection String
+            string connectionString = "DefaultEndpointsProtocol=https;AccountName=yashandayden;AccountKey=+z3CqGaIKp82Lou3klv0MY5SoDxpL3aXgtDFWiRBKXOh6R3ntJbq07qx7LmoC6kISEiwKxMlTGC++AStmQn5wQ==;EndpointSuffix=core.windows.net";
 
-            // Ensuring the exact file share name "staff-docs" is used as per the POE scenario
-            _shareClient = serviceClient.GetShareClient("staff-docs");
-            _shareClient.CreateIfNotExists();
+            _serviceClient = new ShareServiceClient(connectionString);
         }
 
         public async Task UploadFileAsync(string fileName, Stream fileStream)
         {
-            var directoryClient = _shareClient.GetRootDirectoryClient();
+            var shareClient = _serviceClient.GetShareClient(_shareName);
+            await shareClient.CreateIfNotExistsAsync();
+
+            var directoryClient = shareClient.GetRootDirectoryClient();
             var fileClient = directoryClient.GetFileClient(fileName);
 
-            // Allocate the required space on the Azure File Share before initiating the stream transfer
-            await fileClient.CreateAsync(fileStream.Length);
-            fileStream.Position = 0;
-            await fileClient.UploadRangeAsync(new Azure.HttpRange(0, fileStream.Length), fileStream);
+            // MUST use MemoryStream to prevent Kestrel stream exceptions
+            using var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            await fileClient.CreateAsync(memoryStream.Length);
+            memoryStream.Position = 0;
+            await fileClient.UploadRangeAsync(new Azure.HttpRange(0, memoryStream.Length), memoryStream);
         }
 
         public async Task<List<FileMetadataDto>> ListFilesAsync()
         {
-            var directoryClient = _shareClient.GetRootDirectoryClient();
+            var shareClient = _serviceClient.GetShareClient(_shareName);
+            await shareClient.CreateIfNotExistsAsync();
+
+            var directoryClient = shareClient.GetRootDirectoryClient();
             var files = new List<FileMetadataDto>();
 
-            // Iterate through the directory, specifically capturing size and modification dates for the POE rubric
             await foreach (var fileItem in directoryClient.GetFilesAndDirectoriesAsync())
             {
                 if (!fileItem.IsDirectory)
@@ -65,13 +72,14 @@ namespace CoffeeNChill.Functions.Services
             return files;
         }
 
-        // NEW: Method required to fulfill the DownloadStaffDocument endpoint requirement
         public async Task<Stream> DownloadFileAsync(string fileName)
         {
-            var directoryClient = _shareClient.GetRootDirectoryClient();
+            var shareClient = _serviceClient.GetShareClient(_shareName);
+            await shareClient.CreateIfNotExistsAsync();
+
+            var directoryClient = shareClient.GetRootDirectoryClient();
             var fileClient = directoryClient.GetFileClient(fileName);
 
-            // Prevent server crashes by checking if the file actually exists before attempting a download
             if (await fileClient.ExistsAsync())
             {
                 var downloadInfo = await fileClient.DownloadAsync();
