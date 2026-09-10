@@ -1,3 +1,4 @@
+
 # CoffeeNChill-CLDV6212
 
 ## Standalone Container Execution
@@ -9,3 +10,5 @@ To run the Azurite storage emulator in an isolated container binding the default
 ### 2. Azure Functions Containerization 
 To pull and run the published .NET 10 Isolated container independently, use:
 `docker run -p 7170:80 -e AzureWebJobsStorage="UseDevelopmentStorage=true" yashkeshav/coffeenchill-functions:v1.0`
+
+
