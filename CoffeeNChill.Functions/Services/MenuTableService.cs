@@ -12,11 +12,11 @@ namespace CoffeeNChill.Functions.Services
 
         public MenuTableService(IConfiguration configuration)
         {
-            // Connect to Azure Storage using the connection string from local.settings.json
+            // Use the configured Azure Storage connection for table operations.
             var connectionString = configuration["AzureWebJobsStorage"];
             var serviceClient = new TableServiceClient(connectionString);
 
-            // Create or connect to the "MenuItems" table
+            // Create the MenuItems table if it does not already exist.
             _tableClient = serviceClient.GetTableClient("MenuItems");
             _tableClient.CreateIfNotExists();
         }
@@ -42,7 +42,7 @@ namespace CoffeeNChill.Functions.Services
         public async Task<List<MenuItem>> GetMenuItemsByCategoryAsync(string category)
         {
             var items = new List<MenuItem>();
-            // Azure Table Storage uses the PartitionKey to group items (e.g., "Hot Drinks")
+            // Category is stored as the PartitionKey, allowing related menu items to be queried together.
             await foreach (var entity in _tableClient.QueryAsync<MenuItem>(x => x.PartitionKey == category))
             {
                 items.Add(entity);
