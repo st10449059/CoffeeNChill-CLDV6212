@@ -26,7 +26,7 @@ namespace CoffeeNChill.Functions.Services
 
         public FileShareService(IConfiguration configuration)
         {
-            // Read connection string securely from environment variables / local.settings.json
+            // Read the file share connection string from Docker environment variables or local settings.
             string connectionString = Environment.GetEnvironmentVariable("AzureStorageConnectionString")
                                       ?? configuration["AzureStorageConnectionString"];
 
@@ -46,7 +46,7 @@ namespace CoffeeNChill.Functions.Services
             var directoryClient = shareClient.GetRootDirectoryClient();
             var fileClient = directoryClient.GetFileClient(fileName);
 
-            // MUST use MemoryStream to prevent Kestrel stream exceptions
+            // Buffer the request stream so the file can be created with the correct length before upload.
             using var memoryStream = new MemoryStream();
             await fileStream.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
