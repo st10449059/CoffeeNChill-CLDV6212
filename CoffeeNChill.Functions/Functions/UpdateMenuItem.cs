@@ -27,7 +27,7 @@ namespace CoffeeNChill.Functions.Functions.Menu
             _tableService = tableService;
         }
 
-        // Aligning route exactly with the POE requirement: PUT /api/menu/{category}/{id}
+        // Handles PUT requests for updating an existing menu item.
         [Function("UpdateMenuItem")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "menu/{category}/{id}")] HttpRequestData req,
@@ -46,7 +46,7 @@ namespace CoffeeNChill.Functions.Functions.Menu
                 return badRequestResponse;
             }
 
-            // Ensure the URL parameters match the object being updated to maintain data integrity
+            // Use the route values as the table keys for the item being updated.
             menuItem.PartitionKey = category;
             menuItem.RowKey = id;
 
@@ -59,7 +59,7 @@ namespace CoffeeNChill.Functions.Functions.Menu
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                // Securing the "Greatly Exceeds" rubric requirement with a custom 404 response
+                // Return 404 when the menu item does not exist.
                 _logger.LogWarning($"Menu item {id} not found for update.");
                 var notFoundResponse = req.CreateResponse(HttpStatusCode.NotFound);
                 await notFoundResponse.WriteStringAsync($"The menu item {id} does not exist in category {category}.");
