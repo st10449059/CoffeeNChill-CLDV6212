@@ -24,20 +24,19 @@ namespace CoffeeNChill.Functions.Functions.Documents
             _fileShareService = fileShareService;
         }
 
-        // Aligning the route exactly with the POE requirement: POST /api/documents/upload
+        // Handles POST requests for uploading staff documents.
         [Function("UploadStaffDocument")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "documents/upload")] HttpRequestData req)
         {
             _logger.LogInformation("Processing a new staff document upload request.");
 
-            // To handle the file stream dynamically for testing, we will look for a custom header named 'File-Name'.
-            // If the header is missing, we generate a unique fallback name to prevent overwriting existing files.
+            // Use the optional File-Name header, or generate a unique fallback name.
             string fileName = req.Headers.TryGetValues("File-Name", out var headerValues)
                 ? headerValues.FirstOrDefault()
                 : $"uploaded-doc-{System.Guid.NewGuid()}.pdf";
 
-            // Pass the raw request body stream directly to the File Share service
+            // Upload the request body to the staff document file share.
             await _fileShareService.UploadFileAsync(fileName, req.Body);
 
             var response = req.CreateResponse(HttpStatusCode.Created);
