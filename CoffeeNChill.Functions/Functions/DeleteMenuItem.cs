@@ -24,7 +24,7 @@ namespace CoffeeNChill.Functions.Functions.Menu
             _tableService = tableService;
         }
 
-        // Aligning route exactly with the POE requirement: DELETE /api/menu/{category}/{id}
+        // Handles DELETE requests for removing a menu item.
         [Function("DeleteMenuItem")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "menu/{category}/{id}")] HttpRequestData req,
@@ -41,7 +41,7 @@ namespace CoffeeNChill.Functions.Functions.Menu
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                // Securing the "Greatly Exceeds" rubric requirement with a custom 404 response
+                // Return 404 when the menu item cannot be found.
                 _logger.LogWarning($"Menu item {id} not found for deletion.");
                 var notFoundResponse = req.CreateResponse(HttpStatusCode.NotFound);
                 await notFoundResponse.WriteStringAsync($"The menu item {id} could not be found to delete.");
