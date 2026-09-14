@@ -19,11 +19,9 @@ namespace CoffeeNChill.Functions.Functions.Orders
         [Function("SubmitOrder")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "orders")] HttpRequestData req)
-        {
-            // Read the order data sent in the request
+        {          
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
-            // Send it to the queue
             await _queueService.SendMessageAsync(requestBody);
 
             var response = req.CreateResponse(HttpStatusCode.OK);
