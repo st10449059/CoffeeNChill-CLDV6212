@@ -22,7 +22,7 @@ namespace CoffeeNChill.Functions.Functions.Documents
             _fileShareService = fileShareService;
         }
 
-        // Aligning the route exactly with the POE requirement: GET /api/documents/download/{fileName}
+        // Handles GET requests for downloading a staff document by file name.
         [Function("DownloadStaffDocument")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "documents/download/{fileName}")] HttpRequestData req,
@@ -32,7 +32,7 @@ namespace CoffeeNChill.Functions.Functions.Documents
 
             var fileStream = await _fileShareService.DownloadFileAsync(fileName);
 
-            // Robust error handling to secure maximum rubric marks (returning 404 instead of throwing a 500 error)
+            // Return 404 when the requested document is not found.
             if (fileStream == null)
             {
                 _logger.LogWarning($"Document {fileName} was not found in the file share.");
@@ -41,7 +41,7 @@ namespace CoffeeNChill.Functions.Functions.Documents
                 return notFoundResponse;
             }
 
-            // Stream the file back to the client successfully
+            // Stream the file back to the client.
             var response = req.CreateResponse(HttpStatusCode.OK);
             response.Body = fileStream;
             response.Headers.Add("Content-Disposition", $"attachment; filename={fileName}");
