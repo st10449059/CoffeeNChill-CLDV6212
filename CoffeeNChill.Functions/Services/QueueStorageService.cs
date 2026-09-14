@@ -13,7 +13,7 @@ namespace CoffeeNChill.Functions.Services
             var connectionString = configuration["AzureWebJobsStorage"];
             _queueClient = new QueueClient(connectionString, "order-queue");
 
-            // This ensures a queue named "order-queue" exists
+            // Create the order queue if it does not already exist.
             _queueClient.CreateIfNotExists();
         }
 
