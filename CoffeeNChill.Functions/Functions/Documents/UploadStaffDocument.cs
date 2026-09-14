@@ -24,7 +24,7 @@ namespace CoffeeNChill.Functions.Functions.Documents
             _fileShareService = fileShareService;
         }
 
-        // Aligning the route exactly with the POE requirement: POST /api/documents/upload[cite: 1]
+        // Aligning the route exactly with the POE requirement: POST /api/documents/upload
         [Function("UploadStaffDocument")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "documents/upload")] HttpRequestData req)
