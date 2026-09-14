@@ -23,17 +23,17 @@ namespace CoffeeNChill.Functions.Functions.Documents
             _fileShareService = fileShareService;
         }
 
-        // Aligning the route exactly with the POE requirement: GET /api/documents
+        // Handles GET requests for listing uploaded staff documents.
         [Function("ListStaffDocuments")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "documents")] HttpRequestData req)
         {
             _logger.LogInformation("Retrieving the list of staff documents from the file share.");
 
-            // Fetch the list of DTOs (Data Transfer Objects) containing the file metadata
+            // Retrieve file metadata from the staff document file share.
             var files = await _fileShareService.ListFilesAsync();
 
-            // Return a 200 OK response with the file metadata automatically serialized into JSON
+            // Return the file metadata as JSON.
             var response = req.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(files);
 
