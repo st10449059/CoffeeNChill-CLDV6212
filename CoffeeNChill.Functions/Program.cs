@@ -8,8 +8,8 @@ var host = new HostBuilder()
     {
         services.AddSingleton<MenuTableService>();
         services.AddSingleton<FileShareService>();
-        services.AddSingleton<BlobStorageService>();  // <-- Your new Blob service
-        services.AddSingleton<QueueStorageService>(); // <-- Your new Queue service
+        services.AddSingleton<BlobStorageService>();  
+        services.AddSingleton<QueueStorageService>(); 
     })
     .Build();
 
