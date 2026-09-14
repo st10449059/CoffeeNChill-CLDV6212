@@ -21,13 +21,13 @@ namespace CoffeeNChill.Functions.Services
             _tableClient.CreateIfNotExists();
         }
 
-        // CREATE
+        // Adds a new menu item to the MenuItems table.
         public async Task CreateMenuItemAsync(MenuItem item)
         {
             await _tableClient.AddEntityAsync(item);
         }
 
-        // READ ALL
+        // Retrieves all menu items from the table.
         public async Task<List<MenuItem>> GetAllMenuItemsAsync()
         {
             var items = new List<MenuItem>();
@@ -38,7 +38,7 @@ namespace CoffeeNChill.Functions.Services
             return items;
         }
 
-        // READ BY CATEGORY (Filters by PartitionKey)
+        // Retrieves menu items that share the same category PartitionKey.
         public async Task<List<MenuItem>> GetMenuItemsByCategoryAsync(string category)
         {
             var items = new List<MenuItem>();
@@ -50,13 +50,13 @@ namespace CoffeeNChill.Functions.Services
             return items;
         }
 
-        // UPDATE
+        // Replaces an existing table entity with the updated menu item values.
         public async Task UpdateMenuItemAsync(MenuItem item)
         {
             await _tableClient.UpdateEntityAsync(item, Azure.ETag.All, TableUpdateMode.Replace);
         }
 
-        // DELETE
+        // Deletes a menu item using its category and item ID.
         public async Task DeleteMenuItemAsync(string category, string id)
         {
             await _tableClient.DeleteEntityAsync(category, id);
