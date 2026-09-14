@@ -110,7 +110,7 @@ Move into the project folder:
 
 Start Azurite as a standalone Docker container:
 
-`docker run -d --name azurite-storage -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`
+`docker run -d --name azurite-storage -p 10000:10000 -p 10001:10001 -p 10002:10002 yashkeshav/coffeenchill-azurite:v1.0`
 
 Check that the container is running:
 
@@ -167,9 +167,9 @@ Azurite image:
 
 Docker Hub links:
 
-`https://hub.docker.com/r/yashkeshav/coffeenchill-functions`
+[CoffeeNChill Functions Docker Image](https://hub.docker.com/r/yashkeshav/coffeenchill-functions)
 
-`https://hub.docker.com/r/yashkeshav/coffeenchill-azurite`
+[CoffeeNChill Azurite Docker Image](https://hub.docker.com/r/yashkeshav/coffeenchill-azurite)
 
 Screenshots showing the Docker containers running are included in the submitted Word document.
 
@@ -252,7 +252,7 @@ Screenshots showing the Postman requests and Azure Storage Explorer verification
 
 The Part 1 video demonstration is available here:
 
-`https://youtu.be/4YlkgZoRjlY`
+[Watch the CoffeeNChill Part 1 YouTube Demonstration](https://youtu.be/4YlkgZoRjlY)
 
 The video demonstrates:
 
@@ -269,7 +269,7 @@ The video demonstrates:
 
 ## GitHub Repository
 
-`https://github.com/st10449059/CoffeeNChill-CLDV6212`
+[Open the CoffeeNChill GitHub Repository](https://github.com/st10449059/CoffeeNChill-CLDV6212)
 
 The GitHub commit history shows contributions from both group members.
 
