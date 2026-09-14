@@ -23,7 +23,7 @@ namespace CoffeeNChill.Functions.Functions.Documents
             _fileShareService = fileShareService;
         }
 
-        // Aligning the route exactly with the POE requirement: GET /api/documents[cite: 1]
+        // Aligning the route exactly with the POE requirement: GET /api/documents
         [Function("ListStaffDocuments")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "documents")] HttpRequestData req)
