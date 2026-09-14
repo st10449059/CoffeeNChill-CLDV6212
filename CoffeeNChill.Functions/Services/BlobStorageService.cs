@@ -14,7 +14,7 @@ namespace CoffeeNChill.Functions.Services
             var connectionString = configuration["AzureWebJobsStorage"];
             var serviceClient = new BlobServiceClient(connectionString);
 
-            // This ensures a container named "menu-images" exists
+            // Create the menu-images container if it does not already exist.
             _containerClient = serviceClient.GetBlobContainerClient("menu-images");
             _containerClient.CreateIfNotExists();
         }
