@@ -10,6 +10,10 @@ using CoffeeNChill.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CoffeeNChill.Functions.Functions.Documents
 {
@@ -26,22 +30,44 @@ namespace CoffeeNChill.Functions.Functions.Documents
 
         // Handles POST requests for uploading staff documents.
         [Function("UploadStaffDocument")]
-        public async Task<HttpResponseData> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "documents/upload")] HttpRequestData req)
+        public async Task<IActionResult> Run(
+     [HttpTrigger(AuthorizationLevel.Anonymous, "post",
+        Route = "documents/upload")] HttpRequest req)
         {
-            _logger.LogInformation("Processing a new staff document upload request.");
+            if (!req.HasFormContentType ||
+                req.ContentType?.StartsWith("multipart/form-data",
+                    StringComparison.OrdinalIgnoreCase) != true)
+                return new BadRequestObjectResult("Use multipart/form-data with a file field.");
 
-            // Use the optional File-Name header, or generate a unique fallback name.
-            string fileName = req.Headers.TryGetValues("File-Name", out var headerValues)
-                ? headerValues.FirstOrDefault()
-                : $"uploaded-doc-{System.Guid.NewGuid()}.pdf";
+            IFormCollection form;
+            try
+            {
+                form = await req.ReadFormAsync();
+            }
+            catch (InvalidDataException)
+            {
+                return new BadRequestObjectResult("The multipart request is invalid.");
+            }
 
-            // Upload the request body to the staff document file share.
-            await _fileShareService.UploadFileAsync(fileName, req.Body);
+            var file = form.Files.GetFile("file");
+            if (form.Files.Count != 1 || file == null || file.Length == 0)
+                return new BadRequestObjectResult("Attach exactly one non-empty file named 'file'.");
 
-            var response = req.CreateResponse(HttpStatusCode.Created);
-            await response.WriteStringAsync($"Successfully uploaded {fileName} to the staff-docs file share.");
-            return response;
+            // Keep uploads within the existing service's single-range upload size.
+            if (file.Length > 2 * 1024 * 1024)
+                return new ObjectResult("The file must not exceed 2 MiB.") { StatusCode = 413 };
+
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (extension != ".pdf" && extension != ".png" &&
+                extension != ".jpg" && extension != ".jpeg")
+                return new BadRequestObjectResult("Allowed file extensions: PDF, PNG, JPG and JPEG.");
+
+            var fileName = $"{Guid.NewGuid():N}{extension}";
+            using var stream = file.OpenReadStream();
+            await _fileShareService.UploadFileAsync(fileName, stream);
+            _logger.LogInformation("Uploaded staff document {FileName}.", fileName);
+
+            return new ObjectResult(new { FileName = fileName }) { StatusCode = 201 };
         }
     }
 }

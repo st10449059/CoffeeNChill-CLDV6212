@@ -9,7 +9,8 @@ var host = new HostBuilder()
         services.AddSingleton<MenuTableService>();
         services.AddSingleton<FileShareService>();
         services.AddSingleton<BlobStorageService>();  
-        services.AddSingleton<QueueStorageService>(); 
+        services.AddSingleton<QueueStorageService>();
+        services.AddSingleton<OrdersTableService>();
     })
     .Build();
 
