@@ -1,0 +1,781 @@
+{
+  "info": {
+    "_postman_id": "10ca13dc-1111-4fed-8bc5-c8e11ea083f9",
+    "name": "CoffeeNChill - Part 1 API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58087410",
+    "_collection_link": "https://go.postman.co/collection/58087410-10ca13dc-1111-4fed-8bc5-c8e11ea083f9?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Menu Endpoints",
+      "item": [
+        {
+          "name": "Create Menu Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful\", function () {\r\n    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"Coffee\",\r\n  \"RowKey\": \"part2-duplicate-test-02\",\r\n  \"Name\": \"Validation Test Coffee\",\r\n  \"Description\": \"Part 2 validation check.\",\r\n  \"Price\": -5,\r\n  \"IsAvailable\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/menu",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Menu Items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful\", function () {\r\n    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/menu",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Menu Items By Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful\", function () {\r\n    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7071/api/menu/category/Hot Drinks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7071",
+              "path": [
+                "api",
+                "menu",
+                "category",
+                "Hot Drinks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Menu Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful\", function () {\r\n    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/menu/Coffee/part2-duplicate-test-02",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu",
+                "Coffee",
+                "part2-duplicate-test-02"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Menu Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful\", function () {\r\n    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7071/api/menu/Hot Drinks/COF-001",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7071",
+              "path": [
+                "api",
+                "menu",
+                "Hot Drinks",
+                "COF-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Queue Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Order submission returns 202\", function () {\r\n    pm.response.to.have.status(202);\r\n});\r\n\r\npm.test(\"Response contains the submitted order\", function () {\r\n    const sent = JSON.parse(pm.request.body.raw);\r\n    const received = pm.response.json();\r\n    pm.expect(received.OrderId).to.eql(sent.OrderId);\r\n    pm.expect(received.CustomerName).to.eql(sent.CustomerName);\r\n    pm.expect(received.SelectedItemSKUs).to.eql(sent.SelectedItemSKUs);\r\n    pm.expect(received.TotalPrice).to.eql(sent.TotalPrice);\r\n});\r\n\r\npm.test(\"Response includes a valid order timestamp\", function () {\r\n    const received = pm.response.json();\r\n    pm.expect(received.OrderTimestamp).to.be.a(\"string\");\r\n    pm.expect(Number.isNaN(Date.parse(received.OrderTimestamp))).to.eql(false);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-AUTO-001\",\r\n  \"CustomerName\": \"Integration Test\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25.00\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Queue Order - Negative Price",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Negative price returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Response explains the price requirement\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"positive price\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-NEGATIVE-001\",\r\n  \"CustomerName\": \"Ayden Jordaan\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": -5\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Queue Order - Missing Customer Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Missing customer name returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Response explains the customer name requirement\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"customer name\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-MISSING-NAME-001\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Staff Document Endpoints",
+      "item": [
+        {
+          "name": "Upload Staff Document",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [
+                    "/C:/Users/emeris/Downloads/ICE Task 4.pdf"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/documents/upload",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Staff Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/documents",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "documents"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Staff Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/documents/download/77a4d303ce624595987568fb600d3b10.pdf",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "documents",
+                "download",
+                "77a4d303ce624595987568fb600d3b10.pdf"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Download Staff Document",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": []
+                },
+                "url": {
+                  "raw": "http://localhost:7170/api/documents/download/77a4d303ce624595987568fb600d3b10.pdf",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "7170",
+                  "path": [
+                    "api",
+                    "documents",
+                    "download",
+                    "77a4d303ce624595987568fb600d3b10.pdf"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "content-length",
+                  "value": "0"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 10 Oct 2026 16:05:43 GMT"
+                },
+                {
+                  "key": "server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "content-disposition",
+                  "value": "attachment; filename=77a4d303ce624595987568fb600d3b10.pdf"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            },
+            {
+              "name": "Download Staff Document",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": []
+                },
+                "url": {
+                  "raw": "http://localhost:7170/api/documents/download/c6b3f0207cdb461ca72e61d7fd805a14.pdf",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "7170",
+                  "path": [
+                    "api",
+                    "documents",
+                    "download",
+                    "c6b3f0207cdb461ca72e61d7fd805a14.pdf"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "content-length",
+                  "value": "0"
+                },
+                {
+                  "key": "date",
+                  "value": "Sun, 11 Oct 2026 13:23:35 GMT"
+                },
+                {
+                  "key": "server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "content-disposition",
+                  "value": "attachment; filename=c6b3f0207cdb461ca72e61d7fd805a14.pdf"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Docker Endpoints",
+      "item": [
+        {
+          "name": "Docker - Submit Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-DOCKER-001\",\r\n  \"CustomerName\": \"Yash Docker Test\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Missing Customer Name",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-DOCKER-NONAME-001\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Negative Price",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-DOCKER-NEG-001\",\r\n  \"CustomerName\": \"Yash Docker Regression\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": -5\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Download Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/documents/download/200be6e5ca8449f98f767bebdc30b34a.pdf",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "documents",
+                "download",
+                "200be6e5ca8449f98f767bebdc30b34a.pdf"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Submit Valid Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-DOCKER-002\",\r\n  \"CustomerName\": \"Yash Docker Regression\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - List Menu Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/menu",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [
+                    "/C:/Users/emeris/Downloads/ICE Task 4.pdf"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/documents/upload",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Delete Menu Item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/menu/DockerTests/docker-menu-001",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu",
+                "DockerTests",
+                "docker-menu-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Update Menu Item",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"DockerTests\",\r\n  \"RowKey\": \"docker-menu-001\",\r\n  \"Name\": \"Updated Docker Test Coffee\",\r\n  \"Description\": \"Updated during Docker testing.\",\r\n  \"Price\": 30,\r\n  \"IsAvailable\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/menu/DockerTests/docker-menu-001",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu",
+                "DockerTests",
+                "docker-menu-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Create Menu Item",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"DockerTests\",\r\n  \"RowKey\": \"docker-menu-001\",\r\n  \"Name\": \"Docker Test Coffee\",\r\n  \"Description\": \"Temporary menu item for Docker testing.\",\r\n  \"Price\": 25,\r\n  \"IsAvailable\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/menu",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
