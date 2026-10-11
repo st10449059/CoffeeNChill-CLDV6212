@@ -37,12 +37,27 @@ namespace CoffeeNChill.Functions.Functions.Menu
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var menuItem = JsonSerializer.Deserialize<MenuItem>(requestBody, options);
+            MenuItem? menuItem;
 
-            if (menuItem == null)
+            try
+            {
+                menuItem = JsonSerializer.Deserialize<MenuItem>(requestBody, options);
+            }
+            catch (JsonException)
+            {
+                _logger.LogWarning("Menu request contains invalid JSON.");
+                var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRequest.WriteStringAsync("Request body must contain valid menu item JSON.");
+                return badRequest;
+            }
+            if (menuItem == null ||
+            string.IsNullOrWhiteSpace(menuItem.Name) ||
+            !double.IsFinite(menuItem.Price) ||
+            menuItem.Price < 0)
             {
                 var badRequestResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badRequestResponse.WriteStringAsync("Invalid input: Request body cannot be empty.");
+                await badRequestResponse.WriteStringAsync(
+                    "Name is required. Price must be a finite, non-negative number.");
                 return badRequestResponse;
             }
 
