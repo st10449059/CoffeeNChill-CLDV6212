@@ -13,6 +13,8 @@ using CoffeeNChill.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
 
 namespace CoffeeNChill.Functions.Functions.Menu
 {
@@ -38,6 +40,21 @@ namespace CoffeeNChill.Functions.Functions.Menu
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             MenuItem? menuItem;
+
+            using var document = JsonDocument.Parse(requestBody);
+            var requiredFields = new[] { "Name", "Description", "Price", "IsAvailable" };
+
+            if (document.RootElement.ValueKind != JsonValueKind.Object ||
+                requiredFields.Any(field => !document.RootElement.EnumerateObject()
+                    .Any(property => string.Equals(property.Name, field,
+                        StringComparison.OrdinalIgnoreCase) &&
+                        property.Value.ValueKind != JsonValueKind.Null)))
+            {
+                var missing = req.CreateResponse(HttpStatusCode.BadRequest);
+                await missing.WriteStringAsync(
+                    "PUT requires Name, Description, Price and IsAvailable.");
+                return missing;
+            }
 
             try
             {
