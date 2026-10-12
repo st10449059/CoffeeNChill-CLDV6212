@@ -13,6 +13,8 @@ using CoffeeNChill.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
 
 namespace CoffeeNChill.Functions.Functions.Menu
 {
@@ -37,12 +39,44 @@ namespace CoffeeNChill.Functions.Functions.Menu
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var menuItem = JsonSerializer.Deserialize<MenuItem>(requestBody, options);
+            MenuItem? menuItem;
 
-            if (menuItem == null)
+            
+
+            try
+            {
+                using var document = JsonDocument.Parse(requestBody);
+                var requiredFields = new[] { "Name", "Description", "Price", "IsAvailable" };
+
+                if (document.RootElement.ValueKind != JsonValueKind.Object ||
+                    requiredFields.Any(field => !document.RootElement.EnumerateObject()
+                        .Any(property => string.Equals(property.Name, field,
+                            StringComparison.OrdinalIgnoreCase) &&
+                            property.Value.ValueKind != JsonValueKind.Null)))
+                {
+                    var missing = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await missing.WriteStringAsync(
+                        "PUT requires Name, Description, Price and IsAvailable.");
+                    return missing;
+                }
+
+                menuItem = JsonSerializer.Deserialize<MenuItem>(requestBody, options);
+            }
+            catch (JsonException)
+            {
+                _logger.LogWarning("Menu request contains invalid JSON.");
+                var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRequest.WriteStringAsync("Request body must contain valid menu item JSON.");
+                return badRequest;
+            }
+            if (menuItem == null ||
+            string.IsNullOrWhiteSpace(menuItem.Name) ||
+            !double.IsFinite(menuItem.Price) ||
+            menuItem.Price < 0)
             {
                 var badRequestResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badRequestResponse.WriteStringAsync("Invalid input: Request body cannot be empty.");
+                await badRequestResponse.WriteStringAsync(
+                    "Name is required. Price must be a finite, non-negative number.");
                 return badRequestResponse;
             }
 

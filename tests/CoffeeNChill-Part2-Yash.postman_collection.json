@@ -1,0 +1,1190 @@
+{
+  "info": {
+    "_postman_id": "10ca13dc-1111-4fed-8bc5-c8e11ea083f9",
+    "name": "CoffeeNChill - Part 1 API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58087410",
+    "_collection_link": "https://go.postman.co/collection/58087410-10ca13dc-1111-4fed-8bc5-c8e11ea083f9?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Menu Endpoints",
+      "item": [
+        {
+          "name": "Create Menu Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Menu item created\", function () {\r\n    pm.response.to.have.status(201);\r\n    const item = pm.response.json();\r\n    pm.expect(item.PartitionKey).to.eql(\"DockerTests\");\r\n    pm.expect(item.RowKey).to.eql(\"menu-review-001\");\r\n    pm.expect(item.Price).to.eql(25);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"DockerTests\",\r\n  \"RowKey\": \"menu-review-001\",\r\n  \"Name\": \"Review Coffee\",\r\n  \"Description\": \"Temporary menu regression test.\",\r\n  \"Price\": 25,\r\n  \"IsAvailable\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Menu Items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Created item appears in menu\", function () {\r\n    pm.response.to.have.status(200);\r\n    const item = pm.response.json().find(x =>\r\n        x.PartitionKey === \"DockerTests\" && x.RowKey === \"menu-review-001\");\r\n    pm.expect(item).to.exist;\r\n    pm.expect(item.Price).to.eql(25);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Menu Items By Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Category contains the created item\", function () {\r\n    pm.response.to.have.status(200);\r\n    const items = pm.response.json();\r\n    pm.expect(items).to.be.an(\"array\").that.is.not.empty;\r\n    pm.expect(items.every(x => x.PartitionKey === \"DockerTests\")).to.eql(true);\r\n    pm.expect(items.some(x => x.RowKey === \"menu-review-001\")).to.eql(true);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu/category/DockerTests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu",
+                "category",
+                "DockerTests"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Menu Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Update returns the new values\", function () {\r\n    pm.response.to.have.status(200);\r\n    const item = pm.response.json();\r\n    pm.expect(item.RowKey).to.eql(\"menu-review-001\");\r\n    pm.expect(item.Name).to.eql(\"Updated Review Coffee\");\r\n    pm.expect(item.Price).to.eql(30);\r\n    pm.expect(item.IsAvailable).to.eql(false);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"DockerTests\",\r\n  \"RowKey\": \"menu-review-001\",\r\n  \"Name\": \"Updated Review Coffee\",\r\n  \"Description\": \"Updated during regression testing.\",\r\n  \"Price\": 30,\r\n  \"IsAvailable\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu/DockerTests/menu-review-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu",
+                "DockerTests",
+                "menu-review-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Menu Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Test item deleted\", function () {\r\n    pm.response.to.have.status(204);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu/DockerTests/menu-review-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu",
+                "DockerTests",
+                "menu-review-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Queue Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Order submission returns 202\", function () {\r\n    pm.response.to.have.status(202);\r\n});\r\n\r\npm.test(\"Response contains the submitted order\", function () {\r\n    const sent = JSON.parse(pm.request.body.raw);\r\n    const received = pm.response.json();\r\n    pm.expect(received.OrderId).to.eql(sent.OrderId);\r\n    pm.expect(received.CustomerName).to.eql(sent.CustomerName);\r\n    pm.expect(received.SelectedItemSKUs).to.eql(sent.SelectedItemSKUs);\r\n    pm.expect(received.TotalPrice).to.eql(sent.TotalPrice);\r\n});\r\n\r\npm.test(\"Response includes a valid order timestamp\", function () {\r\n    const received = pm.response.json();\r\n    pm.expect(received.OrderTimestamp).to.be.a(\"string\");\r\n    pm.expect(Number.isNaN(Date.parse(received.OrderTimestamp))).to.eql(false);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-AYDEN-VALID-004\",\r\n  \"CustomerName\": \"Ayden Validation Test\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Queue Order - Negative Price",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Negative price returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Response explains the price requirement\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"positive price\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-NEGATIVE-001\",\r\n  \"CustomerName\": \"Ayden Jordaan\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": -5\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Queue Order - Missing Customer Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Missing customer name returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Response explains the customer name requirement\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"customer name\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-MISSING-NAME-001\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Updated Menu Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Updated values were stored\", function () {\r\n    pm.response.to.have.status(200);\r\n    const item = pm.response.json().find(x =>\r\n        x.PartitionKey === \"DockerTests\" && x.RowKey === \"menu-review-001\");\r\n    pm.expect(item).to.exist;\r\n    pm.expect(item.Name).to.eql(\"Updated Review Coffee\");\r\n    pm.expect(item.Price).to.eql(30);\r\n    pm.expect(item.IsAvailable).to.eql(false);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Menu Item Removed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Deleted item is absent\", function () {\r\n    pm.response.to.have.status(200);\r\n    const items = pm.response.json();\r\n    pm.expect(items).to.be.an(\"array\");\r\n    pm.expect(items.some(x =>\r\n        x.PartitionKey === \"DockerTests\" && x.RowKey === \"menu-review-001\"))\r\n        .to.eql(false);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{baseUrl}}/api/menu",
+              "host": [
+                "{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Order Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Unknown order returns 404\", function () {\r\n    pm.response.to.have.status(404);\r\n    pm.expect(pm.response.text()).to.include(\"Order not found.\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/orders/2026-10-12/ORD-NOT-CREATED-CHECK-001",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "2026-10-12",
+                "ORD-NOT-CREATED-CHECK-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Invalid Order Date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Invalid date returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n    pm.expect(pm.response.text()).to.include(\"yyyy-MM-dd\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/orders/not-a-date/ORD-NOT-CREATED-CHECK-001",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "not-a-date",
+                "ORD-NOT-CREATED-CHECK-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Order Status Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Order accepted\", function () {\r\n    pm.response.to.have.status(202);\r\n    const order = pm.response.json();\r\n    pm.collectionVariables.set(\"statusOrderId\", order.OrderId);\r\n    pm.collectionVariables.set(\r\n        \"statusOrderDate\",\r\n        new Date(order.OrderTimestamp).toISOString().slice(0, 10)\r\n    );\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-YASH-STATUS-001\",\r\n  \"CustomerName\": \"Yash Status Test\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Completed Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status endpoint returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Correct order is stored\", function () {\r\n    const order = pm.response.json();\r\n    pm.expect(order.RowKey).to.eql(\r\n        pm.collectionVariables.get(\"statusOrderId\")\r\n    );\r\n    pm.expect(order.PartitionKey).to.eql(\r\n        pm.collectionVariables.get(\"statusOrderDate\")\r\n    );\r\n    pm.expect(order.CustomerName).to.eql(\"Yash Status Test\");\r\n    pm.expect(order.TotalPriceCents).to.eql(2500);\r\n    pm.expect(JSON.parse(order.SelectedItemSKUsJson))\r\n        .to.eql([\"COF-001\"]);\r\n});\r\n\r\npm.test(\"Order reached Collected\", function () {\r\n    pm.expect(pm.response.json().Status).to.eql(\"Collected\");\r\n});\r\n\r\npm.test(\"All lifecycle timestamps are valid and ordered\", function () {\r\n    const order = pm.response.json();\r\n    const fields = [\r\n        \"OrderTimestamp\", \"ReceivedAt\", \"PreparingAt\",\r\n        \"ReadyAt\", \"CollectedAt\"\r\n    ];\r\n    const times = fields.map(function (field) {\r\n        pm.expect(order[field], field).to.be.a(\"string\");\r\n        const time = Date.parse(order[field]);\r\n        pm.expect(Number.isNaN(time), field + \" is valid\").to.eql(false);\r\n        return time;\r\n    });\r\n\r\n    for (let i = 1; i < times.length; i++) {\r\n        pm.expect(times[i], fields[i] + \" follows previous stage\")\r\n            .to.be.at.least(times[i - 1]);\r\n    }\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/orders/{{statusOrderDate}}/{{statusOrderId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "{{statusOrderDate}}",
+                "{{statusOrderId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Order - Oversized Payload",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"oversizedOrderBody\", JSON.stringify({\r\n    OrderId: \"ORD-SIZE-\" + Date.now(),\r\n    CustomerName: \"Queue Size Test\",\r\n    SelectedItemSKUs: Array.from(\r\n        { length: 100 }, () => \"\\u4E00\".repeat(100)\r\n    ),\r\n    TotalPrice: 25\r\n}));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Oversized order returns 413\", function () {\r\n    pm.response.to.have.status(413);\r\n    pm.expect(pm.response.text())\r\n        .to.include(\"queue message size limit\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{{oversizedOrderBody}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/orders/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validation - Read Menu Item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/menu/category/ValidationTests",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu",
+                "category",
+                "ValidationTests"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validation - Incomplete Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"Name\":\"This update must be rejected\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/menu/ValidationTests/put-validation-001",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu",
+                "ValidationTests",
+                "put-validation-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validation - Full Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"Name\": \"Updated Test Coffee\",\r\n  \"Description\": \"Full update accepted\",\r\n  \"Price\": 30,\r\n  \"IsAvailable\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/menu/ValidationTests/put-validation-001",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu",
+                "ValidationTests",
+                "put-validation-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validation - Create Test Item",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"ValidationTests\",\r\n  \"RowKey\": \"put-validation-001\",\r\n  \"Name\": \"Original Test Coffee\",\r\n  \"Description\": \"Must survive an invalid update\",\r\n  \"Price\": 25,\r\n  \"IsAvailable\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/menu",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validation - Delete Test Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Disposable item deleted\", function () {\r\n    pm.response.to.have.status(204);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7170/api/menu/ValidationTests/put-validation-001",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "menu",
+                "ValidationTests",
+                "put-validation-001"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Staff Document Endpoints",
+      "item": [
+        {
+          "name": "Upload Staff Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Document uploaded successfully\", function () {\r\n    pm.response.to.have.status(201);\r\n    const result = pm.response.json();\r\n    pm.expect(result.FileName).to.be.a(\"string\").and.not.empty;\r\n    pm.collectionVariables.set(\"uploadedFileName\", result.FileName);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [
+                    "/C:/Users/emeris/Documents/CoffeeNChill-CLDV6212/CoffeeNChill-Part2/tests/fixtures/staff-document-test.pdf"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/documents/upload",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Staff Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Staff Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "http://localhost:7170/api/documents/download/1984803e9fb940208109d3967f5e2c31.pdf",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7170",
+              "path": [
+                "api",
+                "documents",
+                "download",
+                "1984803e9fb940208109d3967f5e2c31.pdf"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Download Staff Document",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": []
+                },
+                "url": {
+                  "raw": "http://localhost:7170/api/documents/download/77a4d303ce624595987568fb600d3b10.pdf",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "7170",
+                  "path": [
+                    "api",
+                    "documents",
+                    "download",
+                    "77a4d303ce624595987568fb600d3b10.pdf"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "content-length",
+                  "value": "0"
+                },
+                {
+                  "key": "date",
+                  "value": "Sat, 10 Oct 2026 16:05:43 GMT"
+                },
+                {
+                  "key": "server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "content-disposition",
+                  "value": "attachment; filename=77a4d303ce624595987568fb600d3b10.pdf"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            },
+            {
+              "name": "Download Staff Document",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": []
+                },
+                "url": {
+                  "raw": "http://localhost:7170/api/documents/download/c6b3f0207cdb461ca72e61d7fd805a14.pdf",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "7170",
+                  "path": [
+                    "api",
+                    "documents",
+                    "download",
+                    "c6b3f0207cdb461ca72e61d7fd805a14.pdf"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "content-length",
+                  "value": "0"
+                },
+                {
+                  "key": "date",
+                  "value": "Sun, 11 Oct 2026 13:23:35 GMT"
+                },
+                {
+                  "key": "server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "content-disposition",
+                  "value": "attachment; filename=c6b3f0207cdb461ca72e61d7fd805a14.pdf"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Docker Endpoints",
+      "item": [
+        {
+          "name": "Docker - Submit Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-DOCKER-001\",\r\n  \"CustomerName\": \"Yash Docker Test\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Missing Customer Name",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-DOCKER-NONAME-001\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Negative Price",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-DOCKER-NEG-001\",\r\n  \"CustomerName\": \"Yash Docker Regression\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": -5\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Download Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/download/200be6e5ca8449f98f767bebdc30b34a.pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "download",
+                "200be6e5ca8449f98f767bebdc30b34a.pdf"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Submit Valid Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"OrderId\": \"ORD-DOCKER-002\",\r\n  \"CustomerName\": \"Yash Docker Regression\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - List Menu Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [
+                    "/C:/Users/emeris/Downloads/ICE Task 4.pdf"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Delete Menu Item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu/DockerTests/docker-menu-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu",
+                "DockerTests",
+                "docker-menu-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Update Menu Item",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"DockerTests\",\r\n  \"RowKey\": \"docker-menu-001\",\r\n  \"Name\": \"Updated Docker Test Coffee\",\r\n  \"Description\": \"Updated during Docker testing.\",\r\n  \"Price\": 30,\r\n  \"IsAvailable\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu/DockerTests/docker-menu-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu",
+                "DockerTests",
+                "docker-menu-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Docker - Create Menu Item",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"DockerTests\",\r\n  \"RowKey\": \"docker-menu-001\",\r\n  \"Name\": \"Docker Test Coffee\",\r\n  \"Description\": \"Temporary menu item for Docker testing.\",\r\n  \"Price\": 25,\r\n  \"IsAvailable\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ayden - Published Image Test.",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"OrderId\": \"ORD-AYDEN-PUBLISHED-001\",\r\n  \"CustomerName\": \"Ayden Published Image Test\",\r\n  \"SelectedItemSKUs\": [\"COF-001\"],\r\n  \"TotalPrice\": 25\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/orders/queue",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "orders",
+            "queue"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "statusOrderId",
+      "value": ""
+    },
+    {
+      "key": "statusOrderDate",
+      "value": ""
+    }
+  ]
+}
