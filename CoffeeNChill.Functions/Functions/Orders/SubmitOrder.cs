@@ -59,7 +59,18 @@ namespace CoffeeNChill.Functions.Functions.Orders
                 TotalPrice = order.TotalPrice.Value,
                 OrderTimestamp = DateTimeOffset.UtcNow
             };
-            try { await _queueService.SendMessageAsync(JsonSerializer.Serialize(message)); }
+            var messageJson = JsonSerializer.Serialize(message);
+            var byteCount = System.Text.Encoding.UTF8.GetByteCount(messageJson);
+            var encodedLength = 4L * ((byteCount + 2L) / 3L);
+
+            if (encodedLength > 65536)
+            {
+                var tooLarge = req.CreateResponse(HttpStatusCode.RequestEntityTooLarge);
+                await tooLarge.WriteStringAsync("Order exceeds the queue message size limit.");
+                return tooLarge;
+            }
+
+            try { await _queueService.SendMessageAsync(messageJson); }
             catch (RequestFailedException)
             {
                 var unavailable = req.CreateResponse(HttpStatusCode.ServiceUnavailable);
@@ -68,7 +79,7 @@ namespace CoffeeNChill.Functions.Functions.Orders
             }
             var response = req.CreateResponse(HttpStatusCode.Accepted);
             response.Headers.Add("Content-Type", "application/json");
-            await response.WriteStringAsync(JsonSerializer.Serialize(message));
+            await response.WriteStringAsync(messageJson);
             return response;
         }
     }
