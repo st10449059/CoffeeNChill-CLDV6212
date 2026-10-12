@@ -1,3 +1,169 @@
+# CoffeeNChill — POE Part 2
+
+**CLDV6212**
+- Ayden Jordaan — ST10466857
+- Yash Keshav — ST10449059
+
+## Part 2 Demonstration
+
+YouTube: INSERT THE NEW PART 2 VIDEO LINK HERE
+
+## Part 2 Overview
+
+Part 2 adds asynchronous order processing to CoffeeNChill.
+An HTTP producer validates and queues orders. A queue-triggered
+Azure Function stores each order and advances its status through
+Received → Preparing → Ready → Collected.
+
+The application runs through Docker Compose using the published
+image `yashkeshav/coffeenchill-functions:v2.0` and Microsoft Azurite.
+Azurite provides local Queue and Table storage. Staff documents
+continue to use a real Azure Files share.
+
+## Order Processing
+
+- `POST /api/orders/queue` validates the order and returns 202
+  after successfully enqueueing it.
+- Messages are serialized as JSON and encoded using Base64.
+- The producer generates the order timestamp in UTC.
+- Invalid payloads return 400; oversized messages return 413.
+- Azure storage request failures are handled with a 503 response.
+- `ProcessOrderQueue` consumes `order-processing-queue`.
+- The `Orders` table uses the UTC order date as PartitionKey
+  and OrderId as RowKey.
+- Status changes and lifecycle timestamps are stored and logged.
+- Failed processing is logged and retried. After five unsuccessful
+  dequeue attempts, messages are moved to the poison queue.
+- `GET /api/orders/{orderDate}/{orderId}` retrieves order status.
+
+## Part 2 Changelog
+
+- Added validated order submission and Base64 queue messages.
+- Added server-generated timestamps and queue-size protection.
+- Added queue-triggered processing and persistent order tracking.
+- Added lifecycle transitions, retry handling, and poison handling.
+- Added the order-status endpoint.
+- Added Docker Compose with a published v2.0 application image,
+  custom bridge network, and persistent Azurite volume.
+- Improved incomplete and malformed menu-update validation.
+- Expanded Postman regression tests and added a PDF test fixture.
+- Verified published-container tests and persistence after
+  container recreation.
+
+## Part 2 Setup
+
+### Prerequisites
+
+- Docker Desktop running Linux containers.
+- Git, Postman, and Azure Storage Explorer.
+- An Azure Storage account supporting Azure Files.
+- Available ports: 7170, 10000, 10001, and 10002.
+
+Run commands from the Part 2 folder containing
+`docker-compose.yml` and `CoffeeNChill.Functions`.
+Stop Visual Studio debugging and any competing standalone
+Azurite instance before starting the Docker stack.
+
+### Configure Azure Files
+
+In PowerShell, enter the real Azure Files connection string
+privately when prompted:
+
+```powershell
+$secret = Read-Host "Azure Files connection string" -AsSecureString
+$env:AZURE_FILES_CONNECTION_STRING = [System.Net.NetworkCredential]::new("", $secret).Password
+Remove-Variable secret
+```
+
+Do not commit or display the connection string.
+Keep this terminal open; repeat configuration in a new session.
+
+### Prepare Storage and Start
+
+Create the external volume before the first startup.
+An existing volume with this name is reused:
+
+```powershell
+docker volume create coffeenchill-part2-data
+```
+
+Start the application with one command:
+
+```powershell
+docker compose up -d --pull always
+```
+
+Check startup:
+
+```powershell
+docker compose ps
+```
+
+Wait for Azurite to become healthy and Functions to be Up.
+The API is available at `http://localhost:7170`.
+
+Compose pulls `yashkeshav/coffeenchill-functions:v2.0`,
+uses a custom bridge network, and mounts persistent Azurite
+storage at `/data`. No local application build is required.
+
+## Part 2 Testing
+
+Import a collection from `tests`:
+
+- `CoffeeNChill-Part2-Ayden.postman_collection.json`
+- `CoffeeNChill-Part2-Yash.postman_collection.json`
+
+Set collection variable `baseUrl` to `http://localhost:7170`
+after import, even if its exported value is blank.
+For uploads, select `tests/fixtures/staff-document-test.pdf`
+from the local checkout.
+
+Run these checks in order:
+
+1. Send **Order Status Test** with a fresh OrderId.
+   Expect 202. Its response script captures the order ID/date.
+2. Wait approximately 20 seconds, then send **Completed Order**.
+   Expect 200, Collected, and all four assertions passing.
+   If processing is unfinished, wait and resend only the GET.
+3. Send negative-price and missing-customer requests: expect 400.
+4. Send the oversized-order request: expect 413.
+5. Create a disposable menu item before testing updates.
+   Incomplete and malformed updates should return 400.
+   Read the item again to verify its original values remain.
+6. Send a full update: expect 200 and verify the stored values.
+   Delete only the disposable item: expect 204 and verify absence.
+7. Upload a PDF: expect 201. Download using the returned filename
+   or `{{uploadedFileName}}`: expect 200 and PDF content.
+
+Some requests require manual sequencing and processing waits.
+Saved requests without assertions require response inspection.
+
+### Logs, Storage, and Persistence
+
+Inspect `order-processing-queue`, `Orders`, and the poison queue
+in Storage Explorer. Match order IDs with processing logs:
+
+```powershell
+docker compose logs --tail 100 functions
+```
+
+For persistence, record a completed order's ID and timestamps:
+
+```powershell
+docker compose down
+docker compose up -d
+docker compose ps
+```
+
+Retrieve the same order after startup. Its status and lifecycle
+timestamps should remain unchanged. Do not delete or prune the
+storage volume.
+
+---## Historical Part 1 Documentation
+
+The instructions below describe Part 1, including its v1.0 images
+and port 7071. Use the Part 2 setup instructions above for Part 2.
+## Detailed Description of the Application
 *CLDV6212*
 - Ayden Jordaan — ST10466857
 - Yash Keshav — ST10449059
