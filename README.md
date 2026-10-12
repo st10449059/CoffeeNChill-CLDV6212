@@ -164,70 +164,172 @@ storage volume.
 The instructions below describe Part 1, including its v1.0 images
 and port 7071. Use the Part 2 setup instructions above for Part 2.
 ## Detailed Description of the Application
+*CLDV6212*
+- Ayden Jordaan — ST10466857
+- Yash Keshav — ST10449059
 
-The CoffeeNChill API is a serverless backend REST API designed for the CLDV6212 POE Part 1 submission. The application modernizes part of the campus canteen system by moving menu management and staff document storage into a cloud-ready backend.
+# CoffeeNChill — POE Part 2
+## Part 2 Setup
 
-The application provides API endpoints for managing CoffeeNChill menu items. Users can create menu items, retrieve all menu items, retrieve menu items by category, update existing menu items, and delete menu items. These menu records are stored in Azure Table Storage in a table named `MenuItems`.
+### Prerequisites
 
-The application also provides API endpoints for staff document management. Staff documents can be uploaded, listed, and downloaded. These files are stored in an Azure File Share named `staff-docs`.
+- Docker Desktop running Linux containers.
+- Git, Postman, and Azure Storage Explorer.
+- An Azure Storage account supporting Azure Files.
+- Available ports: 7170, 10000, 10001, and 10002.
 
-The API was tested using Postman, verified using Azure Storage Explorer, containerized with Docker, and published to Docker Hub.
+Run commands from the Part 2 folder containing
+docker-compose.yml and CoffeeNChill.Functions.
+Stop Visual Studio debugging and any competing standalone
+Azurite instance before starting the Docker stack.
+
+### Configure Azure Files
+
+In PowerShell, enter the real Azure Files connection string
+privately when prompted:
+
+powershell
+$secret = Read-Host "Azure Files connection string" -AsSecureString
+$env:AZURE_FILES_CONNECTION_STRING = [System.Net.NetworkCredential]::new("", $secret).Password
+Remove-Variable secret
+
+
+Do not commit or display the connection string.
+Keep this terminal open; repeat configuration in a new session.
+
+### Prepare Storage and Start
+
+Create the external volume before the first startup.
+An existing volume with this name is reused:
+
+powershell
+docker volume create coffeenchill-part2-data
+
+
+Start the application with one command:
+
+powershell
+docker compose up -d --pull always
+
+
+Check startup:
+
+powershell
+docker compose ps
+
+
+Wait for Azurite to become healthy and Functions to be Up.
+The API is available at http://localhost:7170.
+
+Compose pulls yashkeshav/coffeenchill-functions:v2.0,
+uses a custom bridge network, and mounts persistent Azurite
+storage at /data. No local application build is required.
+
+## Part 2 Testing
+
+Import a collection from tests:
+
+- CoffeeNChill-Part2-Ayden.postman_collection.json
+- CoffeeNChill-Part2-Yash.postman_collection.json
+
+Set collection variable baseUrl to http://localhost:7170
+after import, even if its exported value is blank.
+For uploads, select tests/fixtures/staff-document-test.pdf
+from the local checkout.
+
+Run these checks in order:
+
+1. Send *Order Status Test* with a fresh OrderId.
+   Expect 202. Its response script captures the order ID/date.
+2. Wait approximately 20 seconds, then send *Completed Order*.
+   Expect 200, Collected, and all four assertions passing.
+   If processing is unfinished, wait and resend only the GET.
+3. Send negative-price and missing-customer requests: expect 400.
+4. Send the oversized-order request: expect 413.
+5. Create a disposable menu item before testing updates.
+   Incomplete and malformed updates should return 400.
+   Read the item again to verify its original values remain.
+6. Send a full update: expect 200 and verify the stored values.
+   Delete only the disposable item: expect 204 and verify absence.
+7. Upload a PDF: expect 201. Download using the returned filename
+   or {{uploadedFileName}}: expect 200 and PDF content.
+
+Some requests require manual sequencing and processing waits.
+Saved requests without assertions require response inspection.
+
+### Logs, Storage, and Persistence
+
+Inspect order-processing-queue, Orders, and the poison queue
+in Storage Explorer. Match order IDs with processing logs:
+
+powershell
+docker compose logs --tail 100 functions
+
+
+For persistence, record a completed order's ID and timestamps:
+
+powershell
+docker compose down
+docker compose up -d
+docker compose ps
+
+
+Retrieve the same order after startup. Its status and lifecycle
+timestamps should remain unchanged. Do not delete or prune the
+storage volume.
 
 ---
+## Historical Part 1 Documentation
 
-## Architecture Overview
+The instructions below describe Part 1, including its v1.0 images
+and port 7071. Use the Part 2 setup instructions above for Part 2.
 
-The CoffeeNChill API uses a serverless backend architecture.
 
-- **Compute (Azure Functions):** Handles HTTP requests and returns API responses.
-- **Structured Data (Azure Table Storage):** Stores menu items using the item category as the `PartitionKey` and the item SKU as the `RowKey`.
-- **File Storage (Azure File Share):** Stores uploaded staff documents in the `staff-docs` file share.
-- **Local Emulation (Azurite):** Provides a local Azure Storage emulator for development and testing.
-- **Containerization (Docker):** Runs the Azurite emulator and Azure Functions API as standalone containers.
-- **Testing (Postman):** Used to test the required API endpoints.
+## Part 2 Demonstration
 
-The project separates the code into `Functions`, `Models`, and `Services`.
+YouTube: https://youtu.be/ea6mKETFA74
 
-The `Functions` folder contains the HTTP-triggered Azure Functions. These files are responsible for handling API routes and returning responses.
+## Part 2 Overview
 
-The `Models` folder contains the data model used by the application. For Part 1, the main model is `MenuItem`.
+Part 2 adds asynchronous order processing to CoffeeNChill.
+An HTTP producer validates and queues orders. A queue-triggered
+Azure Function stores each order and advances its status through
+Received → Preparing → Ready → Collected.
 
-The `Services` folder contains the storage logic. `MenuTableService` handles Azure Table Storage operations for menu items. `FileShareService` handles Azure File Share operations for staff documents.
+The application runs through Docker Compose using the published
+image yashkeshav/coffeenchill-functions:v2.0 and Microsoft Azurite.
+Azurite provides local Queue and Table storage. Staff documents
+continue to use a real Azure Files share.
 
-This separation keeps the API logic separate from the Azure Storage logic, making the project easier to understand, maintain, and test.
+## Order Processing
 
----
+- POST /api/orders/queue validates the order and returns 202
+  after successfully enqueueing it.
+- Messages are serialized as JSON and encoded using Base64.
+- The producer generates the order timestamp in UTC.
+- Invalid payloads return 400; oversized messages return 413.
+- Azure storage request failures are handled with a 503 response.
+- ProcessOrderQueue consumes order-processing-queue.
+- The Orders table uses the UTC order date as PartitionKey
+  and OrderId as RowKey.
+- Status changes and lifecycle timestamps are stored and logged.
+- Failed processing is logged and retried. After five unsuccessful
+  dequeue attempts, messages are moved to the poison queue.
+- GET /api/orders/{orderDate}/{orderId} retrieves order status.
 
-## Project Team and Individual Contributions
+## Part 2 Changelog
 
-Detailed individual contributions can also be verified through the commit history on this GitHub repository.
-
-- **Ayden Jordaan ST10466857:** Set up the Azure Functions project structure, worked on the storage service layer, improved validation and error handling, fixed menu table service issues, and contributed feature commits through GitHub.
-- **Yash Keshav ST10449059:** Implemented the menu API endpoints, implemented the staff document API endpoints, configured Docker support, published Docker images to Docker Hub, structured the Postman collection, and helped prepare the README and video demonstration.
-
----
-
-## Technologies Used
-
-- **Framework:** C# / .NET Azure Functions Isolated Worker
-- **Database:** Azure Table Storage for menu records
-- **File Storage:** Azure File Share for staff documents
-- **Local Emulator:** Azurite
-- **Containerization:** Docker
-- **Testing:** Postman
-- **Storage Verification:** Azure Storage Explorer
-- **Version Control:** GitHub
-- **Image Registry:** Docker Hub
-
----
-
-## Why Azurite Emulation
-
-Microsoft's official local emulator for Azure Storage is Azurite. The purpose of using Azurite is to allow the team to build and test Azure Storage functionality locally.
-
-In this project, Azurite is used during local testing and runs inside its own Docker container. This allows the Azure Functions API container to connect to local emulated storage while still using Azure Storage SDKs and Azure Storage concepts.
-
-Part 1 requires standalone Docker execution, so Azurite and the Azure Functions API are started separately using `docker run`. Docker Compose is not used for this part.
+- Added validated order submission and Base64 queue messages.
+- Added server-generated timestamps and queue-size protection.
+- Added queue-triggered processing and persistent order tracking.
+- Added lifecycle transitions, retry handling, and poison handling.
+- Added the order-status endpoint.
+- Added Docker Compose with a published v2.0 application image,
+  custom bridge network, and persistent Azurite volume.
+- Improved incomplete and malformed menu-update validation.
+- Expanded Postman regression tests and added a PDF test fixture.
+- Verified published-container tests and persistence after
+  container recreation.
 
 ---
 
