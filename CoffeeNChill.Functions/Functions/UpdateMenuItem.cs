@@ -41,23 +41,25 @@ namespace CoffeeNChill.Functions.Functions.Menu
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             MenuItem? menuItem;
 
-            using var document = JsonDocument.Parse(requestBody);
-            var requiredFields = new[] { "Name", "Description", "Price", "IsAvailable" };
-
-            if (document.RootElement.ValueKind != JsonValueKind.Object ||
-                requiredFields.Any(field => !document.RootElement.EnumerateObject()
-                    .Any(property => string.Equals(property.Name, field,
-                        StringComparison.OrdinalIgnoreCase) &&
-                        property.Value.ValueKind != JsonValueKind.Null)))
-            {
-                var missing = req.CreateResponse(HttpStatusCode.BadRequest);
-                await missing.WriteStringAsync(
-                    "PUT requires Name, Description, Price and IsAvailable.");
-                return missing;
-            }
+            
 
             try
             {
+                using var document = JsonDocument.Parse(requestBody);
+                var requiredFields = new[] { "Name", "Description", "Price", "IsAvailable" };
+
+                if (document.RootElement.ValueKind != JsonValueKind.Object ||
+                    requiredFields.Any(field => !document.RootElement.EnumerateObject()
+                        .Any(property => string.Equals(property.Name, field,
+                            StringComparison.OrdinalIgnoreCase) &&
+                            property.Value.ValueKind != JsonValueKind.Null)))
+                {
+                    var missing = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await missing.WriteStringAsync(
+                        "PUT requires Name, Description, Price and IsAvailable.");
+                    return missing;
+                }
+
                 menuItem = JsonSerializer.Deserialize<MenuItem>(requestBody, options);
             }
             catch (JsonException)
