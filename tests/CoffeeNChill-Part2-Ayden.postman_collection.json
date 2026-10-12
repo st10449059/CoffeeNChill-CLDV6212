@@ -149,6 +149,35 @@
           "response": []
         },
         {
+          "name": "Verify Updated Menu Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Updated values were stored\", function () {\r\n    pm.response.to.have.status(200);\r\n    const item = pm.response.json().find(x =>\r\n        x.PartitionKey === \"DockerTests\" && x.RowKey === \"menu-review-001\");\r\n    pm.expect(item).to.exist;\r\n    pm.expect(item.Name).to.eql(\"Updated Review Coffee\");\r\n    pm.expect(item.Price).to.eql(30);\r\n    pm.expect(item.IsAvailable).to.eql(false);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Delete Menu Item",
           "event": [
             {
@@ -174,6 +203,35 @@
                 "menu",
                 "DockerTests",
                 "menu-review-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Menu Item Removed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Deleted item is absent\", function () {\r\n    pm.response.to.have.status(200);\r\n    const items = pm.response.json();\r\n    pm.expect(items).to.be.an(\"array\");\r\n    pm.expect(items.some(x =>\r\n        x.PartitionKey === \"DockerTests\" && x.RowKey === \"menu-review-001\"))\r\n        .to.eql(false);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/menu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
               ]
             }
           },
@@ -291,64 +349,6 @@
                 "api",
                 "orders",
                 "queue"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Verify Updated Menu Item",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Updated values were stored\", function () {\r\n    pm.response.to.have.status(200);\r\n    const item = pm.response.json().find(x =>\r\n        x.PartitionKey === \"DockerTests\" && x.RowKey === \"menu-review-001\");\r\n    pm.expect(item).to.exist;\r\n    pm.expect(item.Name).to.eql(\"Updated Review Coffee\");\r\n    pm.expect(item.Price).to.eql(30);\r\n    pm.expect(item.IsAvailable).to.eql(false);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/menu",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "menu"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Verify Menu Item Removed",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Deleted item is absent\", function () {\r\n    pm.response.to.have.status(200);\r\n    const items = pm.response.json();\r\n    pm.expect(items).to.be.an(\"array\");\r\n    pm.expect(items.some(x =>\r\n        x.PartitionKey === \"DockerTests\" && x.RowKey === \"menu-review-001\"))\r\n        .to.eql(false);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{baseUrl}}/api/menu",
-              "host": [
-                "{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "menu"
               ]
             }
           },
@@ -545,17 +545,42 @@
           "response": []
         },
         {
+          "name": "Validation - Create Test Item",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"PartitionKey\": \"ValidationTests\",\r\n  \"RowKey\": \"put-validation-001\",\r\n  \"Name\": \"Original Test Coffee\",\r\n  \"Description\": \"Must survive an invalid update\",\r\n  \"Price\": 25,\r\n  \"IsAvailable\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "menu"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Validation - Read Menu Item",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:7170/api/menu/category/ValidationTests",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/menu/category/ValidationTests",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "7170",
               "path": [
                 "api",
                 "menu",
@@ -581,12 +606,50 @@
               }
             },
             "url": {
-              "raw": "http://localhost:7170/api/menu/ValidationTests/put-validation-001",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/menu/ValidationTests/put-validation-001",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "7170",
+              "path": [
+                "api",
+                "menu",
+                "ValidationTests",
+                "put-validation-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validation - Malformed Menu JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Malformed menu JSON returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n    pm.expect(pm.response.text()).to.include(\r\n        \"Request body must contain valid menu item JSON.\"\r\n    );\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"Name\":",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/menu/ValidationTests/put-validation-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
               "path": [
                 "api",
                 "menu",
@@ -612,46 +675,15 @@
               }
             },
             "url": {
-              "raw": "http://localhost:7170/api/menu/ValidationTests/put-validation-001",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/menu/ValidationTests/put-validation-001",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "7170",
               "path": [
                 "api",
                 "menu",
                 "ValidationTests",
                 "put-validation-001"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Validation - Create Test Item",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"PartitionKey\": \"ValidationTests\",\r\n  \"RowKey\": \"put-validation-001\",\r\n  \"Name\": \"Original Test Coffee\",\r\n  \"Description\": \"Must survive an invalid update\",\r\n  \"Price\": 25,\r\n  \"IsAvailable\": true\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:7170/api/menu",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "7170",
-              "path": [
-                "api",
-                "menu"
               ]
             }
           },
@@ -674,12 +706,10 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:7170/api/menu/ValidationTests/put-validation-001",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/menu/ValidationTests/put-validation-001",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "7170",
               "path": [
                 "api",
                 "menu",
