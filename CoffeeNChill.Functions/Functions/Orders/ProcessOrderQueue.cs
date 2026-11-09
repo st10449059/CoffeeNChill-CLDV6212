@@ -6,6 +6,7 @@ using CoffeeNChill.Functions.Models;
 using CoffeeNChill.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Azure;
 
 namespace CoffeeNChill.Functions.Functions.Orders;
 
@@ -53,23 +54,81 @@ public class ProcessOrderQueue
                 });
 
             string[] stages = { "Received", "Preparing", "Ready", "Collected" };
+
             while (true)
             {
+                // Read the current order status.
                 var order = await _orders.GetAsync(date, message.OrderId)
-                    ?? throw new InvalidOperationException("Stored order was not found.");
-                var index = Array.IndexOf(stages, order.Status);
-                if (index < 0) throw new InvalidOperationException("Unknown order status.");
-                if (index == 3) return;
+                    ?? throw new InvalidOperationException(
+                        "Stored order was not found.");
+
+                int index = Array.IndexOf(stages, order.Status);
+
+                if (index < 0)
+                    throw new InvalidOperationException("Unknown order status.");
+
+                // Stop when the order has been collected.
+                if (index == stages.Length - 1)
+                    return;
+
+                // Preserve the existing simulated preparation delay.
                 await Task.Delay(TimeSpan.FromSeconds(5));
-                order.Status = stages[index + 1];
+
+                // Re-read after the delay to detect Staff updates.
+                order = await _orders.GetAsync(date, message.OrderId)
+                    ?? throw new InvalidOperationException(
+                        "Stored order was not found.");
+
+                index = Array.IndexOf(stages, order.Status);
+
+                if (index < 0)
+                    throw new InvalidOperationException("Unknown order status.");
+
+                if (index == stages.Length - 1)
+                    return;
+
+                string nextStatus = stages[index + 1];
                 var now = DateTimeOffset.UtcNow;
-                if (order.Status == "Preparing") order.PreparingAt = now;
-                if (order.Status == "Ready") order.ReadyAt = now;
-                if (order.Status == "Collected") order.CollectedAt = now;
-                await _orders.UpdateAsync(order);
-                _logger.LogInformation("Order {OrderId}: {Status}", order.RowKey, order.Status);
+
+                order.Status = nextStatus;
+
+                // Preserve timestamps written by earlier updates.
+                switch (nextStatus)
+                {
+                    case "Preparing":
+                        order.PreparingAt ??= now;
+                        break;
+
+                    case "Ready":
+                        order.ReadyAt ??= now;
+                        break;
+
+                    case "Collected":
+                        order.CollectedAt ??= now;
+                        break;
+                }
+
+                try
+                {
+                    // UpdateAsync checks the entity's ETag.
+                    await _orders.UpdateAsync(order);
+
+                    _logger.LogInformation(
+                        "Order {OrderId}: {Status}",
+                        order.RowKey,
+                        nextStatus);
+                }
+                catch (RequestFailedException ex) when (ex.Status == 412)
+                {
+                    // Another process updated the order first.
+                    // Re-read the latest state on the next iteration.
+                    _logger.LogInformation(
+                        "Concurrent update detected for order {OrderId}. Retrying from latest status.",
+                        message.OrderId);
+                }
             }
         }
+
         catch (Exception ex)
         {
             _logger.LogError(ex, "Order processing failed; the message will be retried.");
