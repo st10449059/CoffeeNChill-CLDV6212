@@ -499,7 +499,7 @@ Part 3 introduced the following changes to CoffeeNChill:
 
 ## 11. Part 3 Video Demonstration
 
-**Unlisted YouTube video:** [ADD PART 3 VIDEO LINK]
+**Unlisted YouTube video:** https://youtu.be/IwXNnTS8ygk 
 
 The video demonstrates the completed Part 3 implementation, including:
 
