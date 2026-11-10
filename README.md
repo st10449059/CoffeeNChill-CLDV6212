@@ -1,3 +1,564 @@
+# CoffeeNChill — POE Part 3
+
+**Cloud Development B | CLDV6212 | 2026**
+
+**Group Members**
+- Ayden Jordaan — ST10466857
+- Yash Keshav — ST10449059
+
+**Repository:** https://github.com/st10449059/CoffeeNChill-CLDV6212
+
+**Live API:** https://coffeenchill-p3.southafricanorth.cloudapp.azure.com
+
+**Swagger UI:** https://coffeenchill-p3.southafricanorth.cloudapp.azure.com/swagger
+
+**Part 3 Video:** [ADD UNLISTED YOUTUBE LINK]
+
+## Part 3 Overview
+
+Part 3 of CoffeeNChill focuses on securing and deploying the canteen management system through a central API Gateway.
+
+We developed an ASP.NET Core Web API using .NET 10 to provide a single entry point for the existing Azure Functions services. The Gateway introduces JWT authentication, role-based access control, request validation, Swagger documentation and centralised exception handling.
+
+The application is hosted on an Azure Ubuntu Linux virtual machine. Docker Compose manages the application containers, while Caddy provides HTTPS access. We also implemented a GitHub Actions CI/CD pipeline that automatically builds, tests, publishes and deploys the application whenever changes are pushed to the main branch.
+
+The earlier Part 1 and Part 2 implementations remain documented below this section. The deployment instructions in this Part 3 section apply to the final production system.
+
+## 1. System Architecture
+
+The production system consists of an ASP.NET Core Gateway, an Azure Functions backend, Azure Storage services and a Caddy reverse proxy.
+
+```mermaid
+flowchart TD
+    A[Swagger / Postman / Client]
+    B[Caddy HTTPS Reverse Proxy]
+    C[ASP.NET Core API Gateway]
+    D[JWT Authentication and RBAC]
+    E[Azure Users Table]
+    F[Azure Functions Backend]
+    G[Azure MenuItems Table]
+    H[Azure File Share]
+    I[Azure Order Queue]
+    J[Queue-Triggered Function]
+    K[Azure Orders Table]
+    L[GitHub Actions]
+    M[Docker Hub]
+    N[Azure Ubuntu VPS]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    C --> F
+    F --> G
+    F --> H
+    F --> I
+    I --> J
+    J --> K
+    F --> K
+    L --> M
+    L --> N
+    M --> N
+    N -. Hosts .-> B
+```
+
+Incoming HTTPS requests reach Caddy before being forwarded to the Gateway. The Gateway authenticates protected requests and communicates with the Azure Functions backend through an internal Docker network.
+
+The Functions application handles menu operations, staff documents and order processing. Azure Storage provides persistent data storage and asynchronous queue-based processing.
+
+Separating the Gateway from the backend allows us to apply authentication and authorisation consistently without exposing the individual Functions container directly to the public internet.
+
+## 2. Technologies Used
+
+| Technology | Purpose |
+|---|---|
+| C# and .NET 10 | Application development |
+| ASP.NET Core Web API | Public API Gateway |
+| Azure Functions | Backend operations |
+| Azure Table Storage | User, menu and order records |
+| Azure Queue Storage | Asynchronous order submission |
+| Azure Files | Staff document storage |
+| ASP.NET Core Identity PasswordHasher | Secure password hashing |
+| JWT Bearer Authentication | Authentication and role-based access |
+| Swagger / OpenAPI | API documentation and testing |
+| Docker | Application containerisation |
+| Docker Compose | Multi-container deployment |
+| Docker Hub | Published container images |
+| Ubuntu 24.04 LTS | VPS operating system |
+| Azure Virtual Machines | Application hosting |
+| Caddy | HTTPS reverse proxy |
+| GitHub Actions | Automated CI/CD |
+| Postman | API testing |
+
+## 3. API Gateway
+
+The Gateway project is located in `CoffeeNChill.Gateway`.
+
+It uses controllers to organise API endpoints and DTO classes to handle incoming request data. The Gateway validates requests and forwards applicable operations to the Azure Functions backend through a configured HTTP client.
+
+The implementation includes:
+
+- Controller-based API routing.
+- DTOs with request validation.
+- XML comments used in Swagger documentation.
+- JWT Bearer authentication.
+- Customer, Staff and Admin access restrictions.
+- Centralised exception-handling middleware.
+- Standard HTTP response codes.
+- Internal HTTP communication with Azure Functions.
+
+The `Program.cs` file configures dependency injection, authentication, authorisation policies, Swagger and middleware.
+
+The Gateway is deployed with `ASPNETCORE_ENVIRONMENT=Production`. Swagger is enabled separately using the `Swagger__Enabled` configuration setting.
+
+### API Endpoints
+
+| Method | Endpoint | Access |
+|---|---|---|
+| POST | `/api/auth/register` | Public |
+| POST | `/api/auth/login` | Public |
+| GET | `/api/menu` | Public |
+| GET | `/api/menu/category/{category}` | Public |
+| POST | `/api/menu` | Staff / Admin |
+| PUT | `/api/menu/{category}/{id}` | Staff / Admin |
+| DELETE | `/api/menu/{category}/{id}` | Staff / Admin |
+| POST | `/api/orders/queue` | Public |
+| GET | `/api/orders/{orderDate}/{orderId}` | Staff / Admin |
+| PUT | `/api/orders/status` | Staff / Admin |
+| GET | `/api/documents` | Staff / Admin |
+| POST | `/api/documents/upload` | Staff / Admin |
+| GET | `/api/documents/download/{fileName}` | Staff / Admin |
+| DELETE | `/api/documents/{fileName}` | Staff / Admin |
+| GET | `/api/admin/users/summary` | Admin |
+
+The complete list of endpoints, request schemas and supported responses can be viewed through the deployed Swagger interface.
+
+## 4. Authentication and Role-Based Access Control
+
+Part 3 introduces authentication using JWT Bearer tokens and user profiles stored in the Azure `Users` table.
+
+### Registration
+
+The `/api/auth/register` endpoint creates Customer accounts. Registration requires a full name, email address and password.
+
+Passwords are hashed using the ASP.NET Core Identity `PasswordHasher` before being stored in Azure Table Storage. The original password is not saved.
+
+Public registration assigns the `Customer` role automatically. Users cannot select Staff or Admin privileges through the registration request.
+
+### Login
+
+The `/api/auth/login` endpoint verifies the submitted credentials and returns a signed JWT for successful authentication.
+
+The JWT includes the authenticated user's identity and role. Tokens are signed using HMAC-SHA256, and the application validates the issuer, audience, signature and expiration.
+
+Tokens expire after one hour.
+
+### User Roles
+
+| Role | Permissions |
+|---|---|
+| Customer | Public menu access and order submission |
+| Staff | Protected menu, document and order management |
+| Admin | Staff permissions and administrator-only reporting |
+
+The application uses two authorisation policies:
+
+- `StaffOnly`: permits Staff and Admin roles.
+- `AdminOnly`: permits the Admin role.
+
+Requests without valid authentication are rejected from protected endpoints. Authenticated users who lack the required role are also denied access.
+
+### User Storage
+
+The `Users` Azure Table stores each account's email, full name, password hash, role and creation date.
+
+The current implementation uses the partition key `USERS` and an SHA-256-derived row key generated from the normalised email address. The user's original email and assigned role remain separate entity properties.
+
+## 5. Order Processing Through the Gateway
+
+Part 3 exposes the existing Azure Functions order-processing functionality through the public Gateway.
+
+Customers can submit an order without logging in:
+
+`POST /api/orders/queue`
+
+The Gateway forwards the JSON payload to the Azure Functions order producer. The producer validates the order and places an appropriate message onto the Azure Storage queue.
+
+A successful submission returns HTTP `202 Accepted`.
+
+The queue-triggered Function processes the message and creates or updates the corresponding record in the `Orders` Azure Table.
+
+The processing lifecycle follows:
+
+**Received → Preparing → Ready → Collected**
+
+Staff and Admin users can retrieve existing orders and access the protected order-status endpoint.
+
+Because processing takes place asynchronously, the order may not be immediately available after submission. The client can retrieve the record again using the order ID and UTC order date.
+
+## 6. Docker and Linux VPS Deployment
+
+### Live Hosting Environment
+
+| Configuration | Value |
+|---|---|
+| Hosting provider | Microsoft Azure |
+| Virtual machine | `coffeenchill-p3-vm` |
+| Region | South Africa North |
+| Operating system | Ubuntu 24.04 LTS |
+| VM size | Standard D2s v3 |
+| Container runtime | Docker Engine |
+| Container orchestration | Docker Compose |
+| Reverse proxy | Caddy |
+| Public protocol | HTTPS |
+
+**Public URL:** https://coffeenchill-p3.southafricanorth.cloudapp.azure.com
+
+The application runs using the following Docker Compose services:
+
+- `gateway` — ASP.NET Core Web API.
+- `functions` — Azure Functions backend.
+- `caddy` — HTTPS reverse proxy.
+
+The Gateway is accessible internally on the VPS through `127.0.0.1:7350`, while public requests enter through Caddy on ports 80 and 443.
+
+The production Functions service is not directly published to the internet.
+
+### Docker Hub Repositories
+
+**Gateway image:** https://hub.docker.com/r/yashkeshav/coffeenchill-gateway
+
+**Functions image:** https://hub.docker.com/r/yashkeshav/coffeenchill-functions
+
+Both services use published Docker Hub images. Image versions are controlled using the `IMAGE_TAG` deployment variable.
+
+### Prerequisites
+
+To deploy the final application, the host requires:
+
+- Ubuntu Linux with Docker Engine installed.
+- Docker Compose plugin.
+- Git.
+- Network access to Docker Hub and Azure Storage.
+- An Azure Storage connection string.
+- A JWT signing key.
+- The repository's Docker Compose and Caddy configuration files.
+- Required inbound HTTP and HTTPS network rules.
+
+### Clone and Build the Project
+
+```bash
+git clone https://github.com/st10449059/CoffeeNChill-CLDV6212.git
+cd CoffeeNChill-CLDV6212
+```
+
+For development or automated build verification, install the .NET 10 SDK and run:
+
+```bash
+dotnet build CoffeeNChill.Gateway/CoffeeNChill.Gateway.csproj -c Release
+dotnet build CoffeeNChill.Functions/CoffeeNChill.Functions.csproj -c Release
+dotnet test CoffeeNChill.Tests/CoffeeNChill.Tests.csproj -c Release
+```
+
+### Production Environment Configuration
+
+The deployment uses a private `.env` file on the Linux server.
+
+Required variable names are:
+
+```dotenv
+AZURE_STORAGE_CONNECTION_STRING=<private Azure Storage connection string>
+JWT_SIGNING_KEY=<private Base64 signing key>
+IMAGE_TAG=<published Docker image tag>
+```
+
+The JWT signing key must decode to at least 32 bytes.
+
+The Gateway uses issuer `CoffeeNChill` and audience `CoffeeNChillClients`. It connects to the Functions backend at `http://functions:80/` through the Compose network.
+
+Real connection strings, signing keys, passwords and access tokens are not stored in the repository.
+
+### Start the Production Containers
+
+The production deployment combines two Compose files: `compose.p3.yaml` and `compose.public.yaml`.
+
+Validate the configuration:
+
+```bash
+sudo docker compose -f compose.p3.yaml -f compose.public.yaml config --quiet
+```
+
+Pull the published images:
+
+```bash
+sudo docker compose -f compose.p3.yaml -f compose.public.yaml pull
+```
+
+Start the services:
+
+```bash
+sudo docker compose -f compose.p3.yaml -f compose.public.yaml up -d --no-build
+```
+
+Check container status:
+
+```bash
+sudo docker compose -f compose.p3.yaml -f compose.public.yaml ps
+```
+
+Inspect application logs if required:
+
+```bash
+sudo docker compose -f compose.p3.yaml -f compose.public.yaml logs --tail=100
+```
+
+The expected running services are `gateway`, `functions` and `caddy`.
+
+### Deployment Verification
+
+Check the API from the VPS:
+
+```bash
+curl --fail http://127.0.0.1:7350/api/menu
+```
+
+Check the public HTTPS endpoint:
+
+```bash
+curl --fail https://coffeenchill-p3.southafricanorth.cloudapp.azure.com/api/menu
+```
+
+Open the interactive Swagger documentation:
+
+https://coffeenchill-p3.southafricanorth.cloudapp.azure.com/swagger
+
+Successful menu retrieval returns HTTP `200 OK`.
+
+## 7. Automated CI/CD Pipeline — Additional 10 Marks
+
+The project includes a GitHub Actions workflow at:
+
+`.github/workflows/deploy.yml`
+
+The workflow is triggered automatically when changes are pushed to the `main` branch. It also supports manual execution through GitHub Actions.
+
+The pipeline performs the following steps:
+
+1. Checks out the latest source code.
+2. Installs the .NET 10 SDK.
+3. Builds the Gateway and Functions projects.
+4. Runs the authentication unit tests.
+5. Generates a versioned Docker image tag from the Git commit.
+6. Builds and publishes both application images to Docker Hub.
+7. Authenticates to the Azure Linux VPS through SSH.
+8. Updates the deployment image tag.
+9. Pulls the published images through Docker Compose.
+10. Recreates the application containers where necessary.
+11. Verifies the Gateway and public HTTPS endpoint.
+
+GitHub Actions repository secrets are used for deployment authentication and private connection information.
+
+A complete successful pipeline run was recorded:
+
+**CI/CD evidence:** https://github.com/st10449059/CoffeeNChill-CLDV6212/actions/runs/42868042972
+
+The automated workflow reduces the manual steps required to publish application updates and confirms that the code builds and passes its tests before deployment.
+
+## 8. Part 3 Postman Testing
+
+The final Postman collection is included in the repository:
+
+`tests/CoffeeNChill-Part3-Final.postman_collection.json`
+
+The collection tests the publicly deployed Gateway.
+
+### Import and Configure Postman
+
+1. Open Postman.
+2. Import the Part 3 collection JSON file.
+3. Create an environment named `CoffeeNChill Live VPS`.
+4. Configure the required environment variables.
+5. Select the environment before opening the requests.
+
+The environment uses the following variables:
+
+| Variable | Purpose |
+|---|---|
+| `baseUrl` | Live Gateway URL |
+| `token` | Admin JWT |
+| `customerToken` | Customer JWT |
+| `adminEmail` | Demonstration Admin email |
+| `adminPassword` | Demonstration Admin password |
+| `customerEmail` | Demonstration Customer email |
+| `customerPassword` | Demonstration Customer password |
+| `orderId` | Order identifier |
+| `orderDate` | UTC order date |
+
+Set `baseUrl` to:
+
+`https://coffeenchill-p3.southafricanorth.cloudapp.azure.com`
+
+The login requests use Post-response scripts to save generated JWTs into the selected environment.
+
+Protected requests use Postman's Bearer Token authentication with `{{token}}` or `{{customerToken}}`.
+
+Credentials are supplied through the local Postman environment and are not intended to be committed with the exported collection.
+
+### Verified API Tests
+
+| Functionality | Verified response |
+|---|---|
+| Public menu retrieval | 200 |
+| Customer registration | 201 |
+| Successful login | 200 |
+| Protected documents without JWT | 401 |
+| Customer attempting Staff access | 403 |
+| Staff accessing protected documents | 200 |
+| Staff attempting Admin-only access | 403 |
+| Admin accessing user summary | 200 |
+| Create menu item | 201 |
+| Read menu items | 200 |
+| Update menu item | 200 |
+| Delete menu item | 204 |
+| Upload staff document | 201 |
+| List and download documents | 200 |
+| Delete staff document | 204 |
+| Submit order to queue | 202 |
+| Retrieve processed order | 200 |
+| Positive order-status request | 200 |
+| Invalid order request | 400 |
+| Missing order | 404 |
+
+These tests were completed against the running VPS application using Swagger and Postman.
+
+The collection includes Post-response assertions for status-code verification and token handling.
+
+Some operations depend on earlier requests. For example, a menu item must be created before updating or deleting it, and an order must be submitted and processed before retrieval.
+
+Unique demonstration IDs should be used when repeating state-changing tests.
+
+Document upload requests require a local demonstration file to be selected after importing the collection on another computer.
+
+## 9. Part 3 Development Contributions
+
+### Ayden Jordaan — ST10466857
+
+Ayden's primary responsibilities included:
+
+- API Gateway development.
+- Authentication and user account handling.
+- JWT token generation and validation.
+- Role-based authorisation policies.
+- Menu, document and administrative controllers.
+- DTOs and validation.
+- Swagger configuration.
+- Global exception-handling middleware.
+- Gateway containerisation and integration testing.
+
+### Yash Keshav — ST10449059
+
+Yash's primary responsibilities included:
+
+- Azure Functions backend integration.
+- Order processing and order-status functionality.
+- Docker and Docker Compose deployment configuration.
+- Docker Hub image publishing.
+- Azure Ubuntu VPS provisioning.
+- Caddy HTTPS configuration.
+- Production container deployment.
+- GitHub Actions CI/CD implementation.
+- Production troubleshooting and deployment verification.
+
+Both group members contributed to integration, functional testing and final project verification.
+
+The repository retains the feature branches, pull requests and commit history used during development.
+
+**GitHub commit history:** https://github.com/st10449059/CoffeeNChill-CLDV6212/commits/main
+
+## 10. Part 3 Changelog
+
+Part 3 introduced the following changes to CoffeeNChill:
+
+- Created a central ASP.NET Core API Gateway.
+- Added secure Customer registration and login.
+- Implemented password hashing and Azure Table Storage user profiles.
+- Added signed JWT Bearer authentication.
+- Implemented Staff and Admin role-based access restrictions.
+- Added DTOs, request validation and exception handling.
+- Integrated Swagger/OpenAPI with Bearer authentication support.
+- Connected the Gateway to the existing Azure Functions backend.
+- Exposed public order submission through the Gateway.
+- Implemented protected order-status and document operations.
+- Created a production Gateway Docker image.
+- Deployed the complete application to an Azure Ubuntu VPS.
+- Configured HTTPS using Caddy.
+- Published versioned Docker images to Docker Hub.
+- Added automated unit tests.
+- Implemented GitHub Actions CI/CD for the additional ten-mark requirement.
+- Completed live endpoint testing through Swagger and Postman.
+
+## 11. Part 3 Video Demonstration
+
+**Unlisted YouTube video:** [ADD PART 3 VIDEO LINK]
+
+The video demonstrates the completed Part 3 implementation, including:
+
+- API Gateway architecture and source code.
+- JWT authentication and role-based authorisation.
+- Live Swagger documentation.
+- Results from the completed Postman collection.
+- Public order submission and retrieval.
+- Azure Linux VPS deployment.
+- Docker Hub images and Docker Compose configuration.
+- Successful GitHub Actions CI/CD workflow.
+
+The presentation uses the student's own voiceover.
+
+## 12. Security and Configuration Notes
+
+Authentication is enforced by the Gateway before protected requests reach the backend.
+
+The application uses password hashing, signed JWTs and role-based authorisation policies.
+
+Production credentials are supplied privately through environment variables and GitHub Actions secrets.
+
+The following values must never be committed:
+
+- Azure Storage connection strings.
+- JWT signing keys.
+- User passwords.
+- Active JWTs.
+- GitHub or Docker Hub access tokens.
+- SSH private keys.
+- Production `.env` files.
+
+Swagger is enabled for demonstration purposes and can be disabled through application configuration after assessment.
+
+## 13. References
+
+- CLDV6212 Portfolio of Evidence assessment brief and marking rubric, 2026.
+- Microsoft ASP.NET Core documentation: https://learn.microsoft.com/en-us/aspnet/core/
+- Microsoft Azure Functions documentation: https://learn.microsoft.com/en-us/azure/azure-functions/
+- Microsoft Azure Storage documentation: https://learn.microsoft.com/en-us/azure/storage/
+- Microsoft Azure Virtual Machines documentation: https://learn.microsoft.com/en-us/azure/virtual-machines/
+- Docker documentation: https://docs.docker.com/
+- GitHub Actions documentation: https://docs.github.com/en/actions
+- Postman documentation: https://learning.postman.com/docs/
+- Caddy documentation: https://caddyserver.com/docs/
+
+### AI Assistance Disclosure
+
+[PASTE THE EXACT AI ASSISTANCE DISCLOSURE FROM YOUR PREVIOUS PART 1 AND PART 2 SUBMISSION HERE.]
+
+---
+
+# Previous POE Documentation
+
+The sections below are retained from the previous CoffeeNChill submissions to document the development of the project across Parts 1 and 2. Their local setup instructions apply to those earlier versions.
+
+For the final Part 3 application, use the production deployment and testing instructions above.
+
+---
 # CoffeeNChill — POE Part 2
 
 **CLDV6212**
