@@ -1,0 +1,35 @@
+name: coffeenchill-p3
+
+services:
+  functions:
+    image: yashkeshav/coffeenchill-functions:p3-v1
+    restart: unless-stopped
+    environment:
+      FUNCTIONS_WORKER_RUNTIME: dotnet-isolated
+      AzureWebJobsStorage: ${AZURE_STORAGE_CONNECTION_STRING:?Azure Storage is required}
+      AzureStorageConnectionString: ${AZURE_STORAGE_CONNECTION_STRING:?Azure Storage is required}
+    networks:
+      - backend
+
+  gateway:
+    image: yashkeshav/coffeenchill-gateway:p3-v1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7350:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Swagger__Enabled: "true"
+      ASPNETCORE_URLS: http://+:8080
+      FunctionsBackend__BaseUrl: http://functions:80/
+      ConnectionStrings__UsersStorage: ${AZURE_STORAGE_CONNECTION_STRING:?Azure Storage is required}
+      Jwt__Issuer: CoffeeNChill
+      Jwt__Audience: CoffeeNChillClients
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?JWT signing key is required}
+    depends_on:
+      - functions
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
