@@ -258,7 +258,7 @@ public sealed class DocumentsController : ControllerBase
     [RequestSizeLimit(3 * 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = 2 * 1024 * 1024)]
     public async Task<IActionResult> Upload(
-        [FromForm(Name = "file")] IFormFile? file,
+        IFormFile? file,
         CancellationToken cancellationToken)
     {
         const long maxFileSize = 2 * 1024 * 1024;
