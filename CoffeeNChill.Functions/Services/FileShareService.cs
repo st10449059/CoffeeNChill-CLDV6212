@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace CoffeeNChill.Functions.Services
 {
@@ -93,6 +94,35 @@ namespace CoffeeNChill.Functions.Services
                 return downloadInfo.Value.Content;
             }
             return null;
+
+
+        }
+        // Deletes one named document from the existing staff-docs share.
+        // Returns true when deleted, or false when the file does not exist.
+        public async Task<bool> DeleteFileAsync(string fileName)
+        {
+            // Prevent empty names, path traversal and nested path access.
+            if (string.IsNullOrWhiteSpace(fileName) ||
+                fileName.Length > 255 ||
+                fileName == "." ||
+                fileName == ".." ||
+                fileName.Contains('/') ||
+                fileName.Contains('\\') ||
+                fileName.Any(char.IsControl))
+            {
+                throw new ArgumentException(
+                    "Invalid document file name.", nameof(fileName));
+            }
+
+            // Reference the existing share without creating or replacing it.
+            var shareClient = _serviceClient.GetShareClient(_shareName);
+            var directoryClient = shareClient.GetRootDirectoryClient();
+            var fileClient = directoryClient.GetFileClient(fileName);
+
+            // Delete only the specified file, if present.
+            var result = await fileClient.DeleteIfExistsAsync();
+
+            return result.Value;
         }
     }
 }
