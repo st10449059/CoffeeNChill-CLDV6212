@@ -130,6 +130,35 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSingleton<
     CoffeeNChill.Gateway.Services.JwtTokenService>();
 
+// Configure HTTP communication with the internal Functions backend.
+// The backend address comes from application configuration.
+builder.Services.AddHttpClient("FunctionsBackend", (provider, client) =>
+{
+    var configuration =
+        provider.GetRequiredService<IConfiguration>();
+
+    var baseUrl = configuration["FunctionsBackend:BaseUrl"];
+
+    if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) ||
+        (uri.Scheme != Uri.UriSchemeHttp &&
+         uri.Scheme != Uri.UriSchemeHttps))
+    {
+        throw new InvalidOperationException(
+            "FunctionsBackend:BaseUrl must be a valid HTTP or HTTPS URL.");
+    }
+
+    if (uri.AbsolutePath != "/" ||
+        !string.IsNullOrEmpty(uri.Query) ||
+        !string.IsNullOrEmpty(uri.Fragment))
+    {
+        throw new InvalidOperationException(
+            "FunctionsBackend:BaseUrl must point to the backend root.");
+    }
+
+    client.BaseAddress = uri;
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
