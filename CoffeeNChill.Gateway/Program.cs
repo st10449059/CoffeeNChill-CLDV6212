@@ -9,6 +9,19 @@ builder.Services.AddSwaggerGen(options =>
     var xmlFile = $"{builder.Environment.ApplicationName}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 
+    options.AddSecurityDefinition(
+    "bearer",
+    new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Enter your JWT access token."
+    });
+
+options.OperationFilter<
+    CoffeeNChill.Gateway.Swagger.JwtSecurityOperationFilter>();
+
     options.IncludeXmlComments(xmlPath);
 });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -160,6 +173,8 @@ builder.Services.AddHttpClient("FunctionsBackend", (provider, client) =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<CoffeeNChill.Gateway.Middleware.GlobalExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
