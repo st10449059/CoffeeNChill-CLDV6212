@@ -548,8 +548,7 @@ Swagger is enabled for demonstration purposes and can be disabled through applic
 
 ### AI Assistance Disclosure
 
-[PASTE THE EXACT AI ASSISTANCE DISCLOSURE FROM YOUR PREVIOUS PART 1 AND PART 2 SUBMISSION HERE.]
-
+We used AI assistance to review our work, draft documentation, and troubleshoot errors and error-handling behaviour. We reviewed and validated the suggestions before applying them.
 ---
 
 # Previous POE Documentation
