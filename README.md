@@ -12,7 +12,7 @@
 
 **Swagger UI:** https://coffeenchill-p3.southafricanorth.cloudapp.azure.com/swagger
 
-**Part 3 Video:** [ADD UNLISTED YOUTUBE LINK]
+**Part 3 Video:** https://youtu.be/IwXNnTS8ygk 
 
 ## Part 3 Overview
 
