@@ -125,8 +125,8 @@ jobs:
             up -d --no-build
 
           curl --fail --silent --show-error \
-            --retry 8 --retry-delay 4 \
-            --retry-connrefused \
+            --retry 15 --retry-delay 4 \
+            --retry-all-errors \
             http://127.0.0.1:7350/api/menu > /dev/null
 
           echo "PASS: CoffeeNChill deployed successfully."
